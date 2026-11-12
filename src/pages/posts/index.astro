@@ -5,9 +5,9 @@ import { formatDate, readingMinutes, url } from '../../lib/url';
 
 const posts = await getPosts();
 ---
-<Split title="Logbook" eyebrow="03 / Logbook" description="Notes and essays.">
+<Split title="Posts" eyebrow="03 / Posts" description="Notes and essays.">
   <Fragment slot="aside">
-    <h1 class="display">The <em>logbook</em>: notes from the work.</h1>
+    <h1 class="display"><em>Posts</em>: notes from the work.</h1>
     <p class="lede">{posts.length} entries. Follow along with <a href={url('rss.xml')}>RSS</a>.</p>
   </Fragment>
 

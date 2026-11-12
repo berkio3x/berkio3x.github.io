@@ -34,7 +34,7 @@ export const LINKS = [
 export const NAV = [
   { label: 'About', href: 'about/' },
   { label: 'Work', href: 'work/' },
-  { label: 'Logbook', href: 'posts/' },
+  { label: 'Posts', href: 'posts/' },
 ];
 
 // TODO: replace with your projects. `year` is free text.

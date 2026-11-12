@@ -10,7 +10,7 @@ type Item = { group: string; label: string; hint?: string; href?: string; action
 const items: Item[] = [
   { group: 'Go to', label: 'Home', href: url() },
   ...NAV.map((n) => ({ group: 'Go to', label: n.label, href: url(n.href) })),
-  ...posts.map((p) => ({ group: 'Logbook', label: p.data.title, hint: p.data.date.toISOString().slice(0, 10), href: url(`posts/${p.id}/`) })),
+  ...posts.map((p) => ({ group: 'Posts', label: p.data.title, hint: p.data.date.toISOString().slice(0, 10), href: url(`posts/${p.id}/`) })),
   ...PROJECTS.map((p) => ({ group: 'Work', label: p.name, hint: p.year, href: p.href })),
   ...LINKS.map((l) => ({ group: 'Elsewhere', label: l.label, hint: '↗', href: l.href })),
   { group: 'Light', label: 'Auto: the real sky right now', action: 'auto' },

@@ -1,6 +1,6 @@
 # anekix (v2)
 
-Personal site: portfolio, about page and logbook (blog). Built with [Astro](https://astro.build) and deployed to GitHub Pages.
+Personal site: portfolio, about page and posts (blog). Built with [Astro](https://astro.build) and deployed to GitHub Pages.
 
 ## Run locally
 

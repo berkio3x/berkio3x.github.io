@@ -382,7 +382,7 @@ kbd {
   animation: sheet-in 800ms var(--spring) backwards;
 }
 
-/* A logbook margin: a faint signal-orange rule down the sheet. */
+/* A margin: a faint signal-orange rule down the sheet. */
 .sheet::before {
   content: '';
   position: absolute;
@@ -435,7 +435,7 @@ kbd {
 .section-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
 
 /* ==========================================================================
-   Entries (logbook and work)
+   Entries (posts and work)
    ========================================================================== */
 
 .entries { list-style: none; }

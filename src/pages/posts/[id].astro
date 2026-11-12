@@ -18,7 +18,7 @@ const minutes = readingMinutes(post.body ?? '');
 ---
 <Article title={post.data.title} description={post.data.description}>
   <Fragment slot="hero">
-    <a class="back" href={url('posts/')}>← Logbook</a>
+    <a class="back" href={url('posts/')}>← Posts</a>
     <p class="eyebrow">No.{String(number).padStart(2, '0')}</p>
     <h1 class="display article-title">{post.data.title}</h1>
     <p class="post-meta">
