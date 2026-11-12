@@ -1,0 +1,41 @@
+---
+import Mark from './Mark.astro';
+import { NAV, SITE } from '../config';
+import { url } from '../lib/url';
+
+const path = Astro.url.pathname;
+const isActive = (href: string) => path.startsWith(url(href));
+---
+<header class="site-header">
+  <a class="brand" href={url()} aria-label={`${SITE.name}, home`}>
+    <Mark class="brand-mark" />
+    <span class="brand-name">{SITE.name}</span>
+  </a>
+
+  <nav class="nav" aria-label="Primary">
+    <ul class="nav-links">
+      {NAV.map((item, i) => (
+        <li>
+          <a href={url(item.href)} aria-current={isActive(item.href) ? 'page' : undefined}>
+            <span class="nav-index">0{i + 1}</span><span class="nav-label">{item.label}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <button class="palette-open" type="button" aria-label="Open command palette" title="Command palette">
+      <kbd class="kbd-mod">⌘</kbd><kbd>K</kbd>
+    </button>
+  </nav>
+</header>
+
+<script>
+  function bind() {
+    const btn = document.querySelector<HTMLButtonElement>('.palette-open');
+    btn?.addEventListener('click', () => document.dispatchEvent(new CustomEvent('palette:open')));
+    // Show Ctrl instead of the Mac symbol on other systems.
+    if (!/Mac|iPhone|iPad/.test(navigator.platform)) {
+      document.querySelectorAll('.kbd-mod').forEach((k) => (k.textContent = 'Ctrl'));
+    }
+  }
+  document.addEventListener('astro:page-load', bind);
+</script>

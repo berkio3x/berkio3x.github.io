@@ -1,0 +1,48 @@
+---
+import { LINKS, SITE } from '../config';
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="footer-left">
+    <span class="nowrap">© {year} {SITE.fullName}</span>
+    <span class="footer-links">
+      {LINKS.map((l) => <a href={l.href} rel="me noopener" target={l.href.startsWith('http') ? '_blank' : undefined}>{l.label}</a>)}
+    </span>
+  </div>
+  <div class="footer-right">
+    <span class="clock nowrap" data-tz={SITE.timeZone} title={`Local time in ${SITE.location}`}>--:--</span>
+    <button class="light-toggle" type="button" title="Change the light: auto follows the real sun">
+      <span class="light-dot" aria-hidden="true"></span>
+      <span class="light-label">Light</span>
+      <span class="light-mode">auto</span>
+    </button>
+  </div>
+</footer>
+
+<script>
+  function bindFooter() {
+    const btn = document.querySelector<HTMLButtonElement>('.light-toggle');
+    btn?.addEventListener('click', () => document.dispatchEvent(new CustomEvent('light:cycle')));
+
+    const clock = document.querySelector<HTMLElement>('.clock');
+    if (!clock) return;
+    let fmt: Intl.DateTimeFormat;
+    try {
+      fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: clock.dataset.tz });
+    } catch {
+      fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+    const tick = () => { clock.textContent = `${fmt.format(new Date())} here`; };
+    tick();
+    const id = setInterval(tick, 15000);
+    document.addEventListener('astro:before-swap', () => clearInterval(id), { once: true });
+  }
+  document.addEventListener('astro:page-load', bindFooter);
+
+  // The light controller announces every change; mirror it on the button.
+  document.addEventListener('sky', (e) => {
+    const { mode, state } = (e as CustomEvent).detail;
+    const label = document.querySelector('.light-mode');
+    if (label) label.textContent = mode === 'auto' ? `auto · ${state.phase}` : mode;
+  });
+</script>

@@ -1,0 +1,42 @@
+---
+// Post pages: the title sits over the sky, then a full-width paper sheet
+// rises over the sea for reading. A thin strip of sea stays visible.
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+<Base title={title} description={description} page="article">
+  <main class="article">
+    <header class="article-hero">
+      <div class="article-col">
+        <slot name="hero" />
+      </div>
+    </header>
+    <div class="sheet sheet-full">
+      <div class="article-col article-body">
+        <slot />
+      </div>
+    </div>
+  </main>
+</Base>
+
+<script>
+  // Show the paper band behind the header once the reader is on the sheet.
+  function bindReading() {
+    const sheet = document.querySelector<HTMLElement>('.sheet-full');
+    if (!sheet) return;
+    const root = document.documentElement;
+    const update = () => root.classList.toggle('is-reading', sheet.getBoundingClientRect().top < 70);
+    update();
+    addEventListener('scroll', update, { passive: true });
+    document.addEventListener('astro:before-swap', () => {
+      removeEventListener('scroll', update);
+      root.classList.remove('is-reading');
+    }, { once: true });
+  }
+  document.addEventListener('astro:page-load', bindReading);
+</script>

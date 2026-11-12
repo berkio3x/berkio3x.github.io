@@ -1,0 +1,63 @@
+---
+import Split from '../layouts/Split.astro';
+import { EXPERIENCE, LINKS, SITE, STACK } from '../config';
+---
+<Split title="About" eyebrow="01 / About" description={`About ${SITE.fullName}.`}>
+  <Fragment slot="aside">
+    <h1 class="display">Problems that get <em>simpler</em> the longer you look.</h1>
+    <p class="lede">Based in {SITE.location}. The sky behind this text is the one over my desk right now.</p>
+  </Fragment>
+
+  <!-- TODO: rewrite these paragraphs in your own words. -->
+  <section class="section prose">
+    <p>
+      I am {SITE.fullName}, a software engineer. I spend most of my time on backend systems,
+      developer tools and the glue between them. I care about software that is easy to read,
+      easy to run and hard to break.
+    </p>
+    <p>
+      Outside work I write here about what I learn, take things apart to see how they work,
+      and keep a list of side projects that is longer than it should be.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-label"><span class="n">a.</span> Experience</h2>
+    <div class="rows">
+      {EXPERIENCE.map((e) => (
+        <div class="row">
+          <span class="row-key">{e.when}</span>
+          <span class="row-value">{e.what}</span>
+          <span class="row-side">{e.where}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-label"><span class="n">b.</span> Toolbox</h2>
+    <div class="rows">
+      {STACK.map((s) => (
+        <div class="row">
+          <span class="row-key">{s.group}</span>
+          <span class="row-value">{s.items}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-label"><span class="n">c.</span> Elsewhere</h2>
+    <div class="rows">
+      {LINKS.map((l) => (
+        <div class="row">
+          <span class="row-key">{l.label}</span>
+          <a class="row-value" href={l.href} rel="me noopener" target={l.href.startsWith('http') ? '_blank' : undefined}>
+            {l.href.replace(/^mailto:|^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+          </a>
+          <span class="row-side">↗</span>
+        </div>
+      ))}
+    </div>
+  </section>
+</Split>

@@ -1,0 +1,17 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/url';
+---
+<Base title="Not found" page="home">
+  <main class="home">
+    <section class="hero" style="justify-content:flex-start">
+      <div class="hero-main"><p class="eyebrow">404</p>
+      <h1 class="hero-name" style="font-size:clamp(3.4rem,2rem + 8vw,8rem)">Lost at sea.</h1>
+      <p class="hero-tagline">This page is not here. It may have drifted off.</p></div>
+    </section>
+    <section class="water">
+      <nav class="home-actions"><a class="pill" href={url()}>Back to shore</a></nav>
+      
+    </section>
+  </main>
+</Base>

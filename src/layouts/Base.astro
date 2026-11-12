@@ -1,0 +1,111 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '@fontsource/bodoni-moda/400-italic.css';
+import '@fontsource-variable/fraunces/full.css';
+import '@fontsource-variable/fraunces/full-italic.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '@fontsource-variable/newsreader/opsz.css';
+import '@fontsource-variable/newsreader/opsz-italic.css';
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Palette from '../components/Palette.astro';
+import { SITE } from '../config';
+import { url } from '../lib/url';
+
+interface Props {
+  title?: string;
+  description?: string;
+  page?: 'home' | 'content' | 'article';
+}
+
+const { title, description = SITE.description, page = 'content' } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.fullName}` : `${SITE.fullName} (@${SITE.name}): ${SITE.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const { lat, lon } = SITE.coords;
+---
+
+<!doctype html>
+<html lang="en" data-page={page}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={url('favicon.svg')} />
+    <link rel="alternate" type="application/rss+xml" title={`${SITE.name} logbook`} href={url('rss.xml')} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+
+    <!-- Pick day or night before first paint. In auto mode this is the real
+         sun elevation over SITE.coords, so there is no flash. -->
+    <script is:inline define:vars={{ lat, lon }}>
+      (function () {
+        function sunUp() {
+          var r = Math.PI / 180, d = Date.now() / 864e5 + 2440587.5 - 2451545;
+          var g = (357.529 + 0.98560028 * d) * r, q = 280.459 + 0.98564736 * d;
+          var L = (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * r, e = 23.439 * r;
+          var ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)) / r;
+          var dec = Math.asin(Math.sin(e) * Math.sin(L));
+          var ha = (280.46061837 + 360.98564736629 * d + lon - ra) * r;
+          var el = Math.asin(Math.sin(lat * r) * Math.sin(dec) + Math.cos(lat * r) * Math.cos(dec) * Math.cos(ha)) / r;
+          return el > -5;
+        }
+        function apply() {
+          var m = null;
+          try { m = localStorage.getItem('light-mode'); } catch (e) {}
+          var night = m === 'night' ? true : m === 'day' ? false : !sunUp();
+          document.documentElement.classList.toggle('theme-night', night);
+          document.documentElement.dataset.light = m || 'auto';
+        }
+        apply();
+        document.addEventListener('astro:after-swap', apply);
+      })();
+    </script>
+    <ClientRouter fallback="swap" />
+  </head>
+  <body>
+    <canvas id="sea" aria-hidden="true" transition:persist="sea"></canvas>
+    <div class="grain" aria-hidden="true" transition:persist="grain"></div>
+
+    <Header />
+    <div class="page" data-page={page}>
+      <slot />
+    </div>
+    <Footer />
+    <Palette />
+
+    <script>
+      import { startSea, HORIZON } from '../scripts/sea';
+      import { createLight, readMode } from '../scripts/light';
+      import { computeSky, type LightMode } from '../lib/sky';
+      import { SITE } from '../config';
+
+      const { lat, lon } = SITE.coords;
+      const canvas = document.getElementById('sea') as HTMLCanvasElement | null;
+      const initial = computeSky(new Date(), lat, lon, readMode());
+      const sea = canvas ? startSea(canvas, initial) : null;
+      const light = createLight(lat, lon, (s) => sea?.setSky(s));
+      light.apply();
+
+      const horizonFor = () =>
+        document.documentElement.dataset.page === 'content' ? HORIZON.content : HORIZON.home;
+      sea?.setHorizon(horizonFor(), true);
+
+      document.addEventListener('light:cycle', () => light.cycle());
+      document.addEventListener('light:set', (e) => light.set((e as CustomEvent<LightMode>).detail));
+      document.addEventListener('astro:page-load', () => {
+        sea?.setHorizon(horizonFor());
+        light.apply();
+      });
+      // Let page scripts (the bottle) splash the water.
+      document.addEventListener('sea:ripple', (e) => {
+        const { x, y } = (e as CustomEvent<{ x: number; y: number }>).detail;
+        sea?.ripple(x, y, 1.2);
+      });
+    </script>
+  </body>
+</html>

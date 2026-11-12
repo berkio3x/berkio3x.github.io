@@ -1,0 +1,12 @@
+---
+// The site's mark: a sun sitting on the horizon, with two lines of swell.
+interface Props { class?: string; size?: number }
+const { class: cls = '', size = 22 } = Astro.props;
+---
+<svg class={`mark ${cls}`} width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+  <g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+    <path class="mark-sun" d="M7 17a9 9 0 0 1 18 0" />
+    <path d="M3 17h26" />
+    <path class="mark-swell" d="M8 22h16M12 26.5h8" />
+  </g>
+</svg>

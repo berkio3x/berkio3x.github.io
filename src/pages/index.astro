@@ -1,0 +1,171 @@
+---
+import Base from '../layouts/Base.astro';
+import { LINKS, SITE } from '../config';
+import { getPosts } from '../lib/posts';
+import { url } from '../lib/url';
+
+const [latest] = await getPosts();
+const letters = [...SITE.fullName];
+const github = LINKS.find((l) => l.label === 'GitHub')?.href;
+const { lat, lon } = SITE.coords;
+const fmtCoord = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(2)}°${v >= 0 ? pos : neg}`;
+---
+<Base page="home">
+  <main class="home">
+    <section class="hero">
+      <div class="hero-main">
+        <p class="eyebrow">Hello, I am</p>
+        <h1 class="hero-name" aria-label={SITE.fullName}>
+          {letters.map((ch, i) => <span class="letter" style={`--i:${i}`} aria-hidden="true">{ch}</span>)}<span class="letter dot" style={`--i:${letters.length}`} aria-hidden="true">.</span>
+        </h1>
+        <p class="hero-handle">a.k.a. {github ? <a href={github} target="_blank" rel="me noopener">@{SITE.name}</a> : `@${SITE.name}`}</p>
+        <p class="hero-tagline">{SITE.tagline}</p>
+        <p class="hero-now" aria-live="polite">
+          <span class="now-key">$ now</span><span class="now-text" data-lines={JSON.stringify(SITE.now)}>{SITE.now[0]}</span><span class="caret" aria-hidden="true"></span>
+        </p>
+      </div>
+
+      <aside class="hud" aria-label="Conditions where I am">
+        <p class="hud-title"><span>Conditions at the desk</span></p>
+        <dl>
+          <div class="hud-row"><dt>Local time</dt><dd data-hud="time">--:--</dd></div>
+          <div class="hud-row"><dt>Sun</dt><dd data-hud="sun">--</dd></div>
+          <div class="hud-row"><dt>Moon</dt><dd data-hud="moon">--</dd></div>
+          <div class="hud-row"><dt>Light</dt><dd data-hud="light">--</dd></div>
+          <div class="hud-row"><dt>Position</dt><dd>{fmtCoord(lat, 'N', 'S')} {fmtCoord(lon, 'E', 'W')}</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="water">
+      <nav class="home-actions" aria-label="Sections">
+        <a class="pill" href={url('about/')}><span class="n">01</span>About me</a>
+        <a class="pill" href={url('work/')}><span class="n">02</span>Selected work</a>
+        <a class="pill" href={url('posts/')}><span class="n">03</span>Logbook</a>
+      </nav>
+
+      {latest && (
+        <a class="latest" href={url(`posts/${latest.id}/`)}>
+          <span class="latest-label">Latest log entry</span>
+          <span class="latest-title">{latest.data.title}</span>
+        </a>
+      )}
+
+      <p class="hint" aria-hidden="true">Click the water. Press <kbd>/</kbd> to jump anywhere.</p>
+
+      <button class="bottle" type="button" aria-label="Write me a message in a bottle">
+        <span class="bottle-tip">Message in a bottle</span>
+        <svg viewBox="0 0 120 50" aria-hidden="true">
+          <rect class="cork" x="104" y="19" width="12" height="12" rx="2" />
+          <path class="glass" d="M8 10h60c8 0 12 4 20 6h16v18H88c-8 2-12 6-20 6H8a6 6 0 0 1-6-6V16a6 6 0 0 1 6-6z" />
+          <rect class="note" x="18" y="18" width="46" height="14" rx="3" transform="rotate(-4 41 25)" />
+          <path d="M24 23h30M24 27h22" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity="0.8" transform="rotate(-4 41 25)" />
+        </svg>
+      </button>
+    </section>
+
+    <dialog class="bottle-letter" aria-labelledby="letter-title">
+      <form method="dialog">
+        <h2 id="letter-title">Message in a bottle</h2>
+        <p>Write it here. It opens in your mail app, addressed to me.</p>
+        <textarea name="message" placeholder="Ahoy," required></textarea>
+        <div class="letter-actions">
+          <button class="btn" value="cancel" formnovalidate>Keep it</button>
+          <button class="btn btn-primary" value="send">Cast it to sea</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+</Base>
+
+<script>
+  import { SITE } from '../config';
+  import { moonPhase, sunPosition } from '../lib/sky';
+
+  // Types out each "now" line, holds it, deletes it, then moves on.
+  function runNow() {
+    const el = document.querySelector<HTMLElement>('.now-text');
+    if (!el || el.dataset.bound) return;
+    el.dataset.bound = '1';
+    const lines: string[] = JSON.parse(el.dataset.lines || '[]');
+    if (lines.length < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let i = 0;
+    let alive = true;
+    document.addEventListener('astro:before-swap', () => (alive = false), { once: true });
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    (async () => {
+      while (alive) {
+        await wait(2600);
+        for (let n = el.textContent!.length; n >= 0 && alive; n--) {
+          el.textContent = lines[i].slice(0, n);
+          await wait(22);
+        }
+        i = (i + 1) % lines.length;
+        for (let n = 0; n <= lines[i].length && alive; n++) {
+          el.textContent = lines[i].slice(0, n);
+          await wait(48);
+        }
+      }
+    })();
+  }
+
+  // Fills the instrument panel with real values for SITE.coords.
+  function runHud() {
+    const get = (k: string) => document.querySelector<HTMLElement>(`[data-hud="${k}"]`);
+    if (!get('time')) return;
+    const { lat, lon } = SITE.coords;
+    let fmt: Intl.DateTimeFormat;
+    try {
+      fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: SITE.timeZone });
+    } catch {
+      fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+    const update = () => {
+      const now = new Date();
+      const sun = sunPosition(now, lat, lon);
+      const moon = moonPhase(now);
+      get('time')!.textContent = fmt.format(now);
+      const el = sun.elevation;
+      get('sun')!.textContent = `${el >= 0 ? '+' : '−'}${Math.abs(el).toFixed(1)}° ${el >= 0 ? 'up' : 'below'}`;
+      const pct = Math.round(moon.illumination * 100);
+      const lit = moon.waxing ? 'right' : 'left';
+      get('moon')!.innerHTML =
+        `<span class="moon-glyph" style="background:linear-gradient(to ${lit}, transparent ${100 - pct}%, currentColor ${100 - pct}%)"></span>${pct}% ${moon.name}`;
+    };
+    update();
+    const id = setInterval(update, 30000);
+    document.addEventListener('astro:before-swap', () => clearInterval(id), { once: true });
+  }
+
+  function runBottle() {
+    const bottle = document.querySelector<HTMLButtonElement>('.bottle');
+    const dialog = document.querySelector<HTMLDialogElement>('.bottle-letter');
+    if (!bottle || !dialog) return;
+    bottle.addEventListener('click', () => {
+      const r = bottle.getBoundingClientRect();
+      document.dispatchEvent(new CustomEvent('sea:ripple', { detail: { x: r.left + r.width / 2, y: r.bottom - 6 } }));
+      dialog.showModal();
+    });
+    dialog.addEventListener('close', () => {
+      const text = dialog.querySelector('textarea')!;
+      if (dialog.returnValue === 'send' && text.value.trim()) {
+        const href = `mailto:${SITE.email}?subject=${encodeURIComponent('A message in a bottle')}&body=${encodeURIComponent(text.value)}`;
+        window.location.href = href;
+        text.value = '';
+      }
+    });
+  }
+
+  // The HUD "Light" row mirrors the light controller.
+  document.addEventListener('sky', (e) => {
+    const { state, mode } = (e as CustomEvent).detail;
+    const el = document.querySelector('[data-hud="light"]');
+    if (el) el.textContent = mode === 'auto' ? state.phase : `${mode} (forced)`;
+  });
+
+  document.addEventListener('astro:page-load', () => {
+    runNow();
+    runHud();
+    runBottle();
+  });
+</script>

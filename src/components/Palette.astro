@@ -1,0 +1,106 @@
+---
+// Command palette. Open with Cmd+K, Ctrl+K or "/". Type to filter, arrows to
+// move, Enter to go. Lists pages, posts, links and the light modes.
+import { LINKS, NAV, PROJECTS } from '../config';
+import { getPosts } from '../lib/posts';
+import { url } from '../lib/url';
+
+const posts = await getPosts();
+type Item = { group: string; label: string; hint?: string; href?: string; action?: string };
+const items: Item[] = [
+  { group: 'Go to', label: 'Home', href: url() },
+  ...NAV.map((n) => ({ group: 'Go to', label: n.label, href: url(n.href) })),
+  ...posts.map((p) => ({ group: 'Logbook', label: p.data.title, hint: p.data.date.toISOString().slice(0, 10), href: url(`posts/${p.id}/`) })),
+  ...PROJECTS.map((p) => ({ group: 'Work', label: p.name, hint: p.year, href: p.href })),
+  ...LINKS.map((l) => ({ group: 'Elsewhere', label: l.label, hint: '↗', href: l.href })),
+  { group: 'Light', label: 'Auto: the real sky right now', action: 'auto' },
+  { group: 'Light', label: 'Day', action: 'day' },
+  { group: 'Light', label: 'Night', action: 'night' },
+];
+---
+<dialog class="palette" aria-label="Command palette" transition:persist="palette">
+  <div class="palette-box">
+    <div class="palette-input-row">
+      <span class="palette-prompt" aria-hidden="true">~/</span>
+      <input class="palette-input" type="text" placeholder="Where to?" autocomplete="off" spellcheck="false" aria-controls="palette-list" />
+      <kbd>esc</kbd>
+    </div>
+    <ul class="palette-list" id="palette-list" role="listbox">
+      {items.map((it, i) => (
+        <li role="option" data-index={i} data-group={it.group} data-href={it.href} data-action={it.action} data-search={`${it.group} ${it.label}`.toLowerCase()}>
+          <span class="palette-group">{it.group}</span>
+          <span class="palette-label">{it.label}</span>
+          {it.hint && <span class="palette-hint">{it.hint}</span>}
+        </li>
+      ))}
+    </ul>
+    <p class="palette-empty" hidden>Nothing here. Try another word.</p>
+  </div>
+</dialog>
+
+<script>
+  import { navigate } from 'astro:transitions/client';
+
+  const dialog = document.querySelector<HTMLDialogElement>('.palette')!;
+  const input = dialog.querySelector<HTMLInputElement>('.palette-input')!;
+  const rows = [...dialog.querySelectorAll<HTMLLIElement>('.palette-list li')];
+  const empty = dialog.querySelector<HTMLElement>('.palette-empty')!;
+  let active = 0;
+
+  const visible = () => rows.filter((r) => !r.hidden);
+
+  function highlight(i: number) {
+    const v = visible();
+    if (!v.length) return;
+    active = (i + v.length) % v.length;
+    rows.forEach((r) => r.removeAttribute('aria-selected'));
+    v[active].setAttribute('aria-selected', 'true');
+    v[active].scrollIntoView({ block: 'nearest' });
+  }
+
+  function filter() {
+    const q = input.value.trim().toLowerCase();
+    const words = q.split(/\s+/).filter(Boolean);
+    rows.forEach((r) => (r.hidden = !words.every((w) => r.dataset.search!.includes(w))));
+    empty.hidden = visible().length > 0;
+    highlight(0);
+  }
+
+  function open() {
+    if (dialog.open) return;
+    input.value = '';
+    filter();
+    dialog.showModal();
+    input.focus();
+  }
+
+  function run(row: HTMLLIElement) {
+    dialog.close();
+    const { href, action } = row.dataset;
+    if (action) {
+      document.dispatchEvent(new CustomEvent('light:set', { detail: action }));
+    } else if (href) {
+      if (/^(https?:|mailto:)/.test(href)) window.open(href, href.startsWith('mailto:') ? '_self' : '_blank', 'noopener');
+      else navigate(href);
+    }
+  }
+
+  input.addEventListener('input', filter);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); highlight(active + 1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); highlight(active - 1); }
+    if (e.key === 'Enter') { e.preventDefault(); const v = visible()[active]; if (v) run(v); }
+  });
+  rows.forEach((r) => {
+    r.addEventListener('click', () => run(r));
+    r.addEventListener('mousemove', () => highlight(visible().indexOf(r)));
+  });
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+  document.addEventListener('palette:open', open);
+  document.addEventListener('keydown', (e) => {
+    const typing = (e.target as HTMLElement).closest('input, textarea, [contenteditable]');
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); dialog.open ? dialog.close() : open(); }
+    else if (e.key === '/' && !typing && !dialog.open) { e.preventDefault(); open(); }
+  });
+</script>

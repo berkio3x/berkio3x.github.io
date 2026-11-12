@@ -1,0 +1,25 @@
+---
+// Content pages: the title floats over the sea on the left, the content
+// sits on a paper sheet on the right. On phones they stack.
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  eyebrow: string;
+}
+const { title, description, eyebrow } = Astro.props;
+---
+<Base title={title} description={description}>
+  <main class="split">
+    <aside class="split-aside">
+      <p class="eyebrow">{eyebrow}</p>
+      <slot name="aside" />
+    </aside>
+    <div class="sheet">
+      <div class="sheet-inner">
+        <slot />
+      </div>
+    </div>
+  </main>
+</Base>
